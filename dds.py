@@ -119,6 +119,8 @@ def generateHeader(num_mipmaps, w, h, format_, size, compressed):
             fourcc = b'ATI2'
         elif format_ == "BC5S":
             fourcc = b'BC5S'
+        elif format_ in ["BC6H_UF16", "BC6H_SF16", "BC7", "BC7_SRGB"]:
+            fourcc = b'DX10'
 
     hdr[:4] = b'DDS '
     hdr[4:4 + 4] = 124 .to_bytes(4, 'little')
@@ -141,5 +143,14 @@ def generateHeader(num_mipmaps, w, h, format_, size, compressed):
         hdr[104:104 + 4] = amask.to_bytes(4, 'little')
 
     hdr[108:108 + 4] = caps.to_bytes(4, 'little')
+
+    if format_ == "BC6H_UF16":
+        hdr += bytearray(b"\x5F\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00")
+    elif format_ == "BC6H_SF16":
+        hdr += bytearray(b"\x60\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00")
+    elif format_ == "BC7":
+        hdr += bytearray(b"\x62\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00")
+    elif format_ == "BC7_SRGB":
+        hdr += bytearray(b"\x63\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00")
 
     return hdr

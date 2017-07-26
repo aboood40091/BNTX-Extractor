@@ -42,11 +42,15 @@ formats = {0x0b01: 'R8_G8_B8_A8_UNORM',
            0x1d01: 'BC4_UNORM',
            0x1d02: 'BC4_SNORM',
            0x1e01: 'BC5_UNORM',
-           0x1e02: 'BC5_SNORM'
+           0x1e02: 'BC5_SNORM',
+           0x1f01: 'BC6H_UF16',
+           0x1f02: 'BC6H_SF16',
+           0x2001: 'BC7_UNORM',
+           0x2006: 'BC7_SRGB'
            }
 
-BCn_formats = [0x1a, 0x1b, 0x1c, 0x1d, 0x1e]
-bpps = {0xb: 4, 7: 2, 2: 1, 9: 2, 0x1a: 8, 0x1b: 16, 0x1c: 16, 0x1d: 8, 0x1e: 16}
+BCn_formats = [0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20]
+bpps = {0xb: 4, 7: 2, 2: 1, 9: 2, 0x1a: 8, 0x1b: 16, 0x1c: 16, 0x1d: 8, 0x1e: 16, 0x1f: 16, 0x20: 16}
 
 
 def bytes_to_string(byte):
@@ -250,6 +254,14 @@ def saveTextures(textures):
                 format_ = "BC5U"
             elif tex.format == 0x1e02:
                 format_ = "BC5S"
+            elif tex.format == 0x1f01:
+                format_ = "BC6H_UF16"
+            elif tex.format == 0x1f02:
+                format_ = "BC6H_SF16"
+            elif tex.format == 0x2001:
+                format_ = "BC7"
+            elif tex.format == 0x2006:
+                format_ = "BC7_SRGB"
 
             result = swizzle.deswizzle(tex.width, tex.height, tex.format, tex.data)
 

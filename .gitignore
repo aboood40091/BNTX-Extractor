@@ -23,7 +23,6 @@ sdist/
 var/
 wheels/
 *.egg-info/
-build.bat
 .installed.cfg
 *.egg
 
@@ -101,3 +100,9 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# Other files
+*.png
+*.dds
+*.bntx
+build.bat
