@@ -41,7 +41,13 @@ def countZeros(v):
 def deswizzle(width, height, format_, data):
     pos_ = 0
 
+    origin_width = width
+    origin_height = height
+
     if (format_ >> 8) in BCn_formats:
+        origin_width = (origin_width + 3) // 4
+        origin_height = (origin_height + 3) // 4
+        
         width = roundSize(width)
         height = roundSize(height)
 
@@ -51,13 +57,7 @@ def deswizzle(width, height, format_, data):
         width = (width + 3) // 4
         height = (height + 3) // 4
 
-        origin_width = width
-        origin_height = height
-
     else:
-        origin_width = width
-        origin_height = height
-
         width = roundSize(width)
         height = roundSize(height)
 
