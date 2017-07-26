@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # BNTX Extractor
-# Version v0.2
+# Version v0.3
 # Copyright © 2017 Stella/AboodXD
 
 # This file is part of BNTX Extractor.
@@ -289,7 +289,7 @@ def saveTextures(textures):
 
 
 def main():
-    print("BNTX Extractor v0.2")
+    print("BNTX Extractor v0.3")
     print("(C) 2017 Stella/AboodXD")
 
     input_ = sys.argv[1]
