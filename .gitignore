@@ -15,6 +15,7 @@ dist/
 downloads/
 eggs/
 .eggs/
+.idea/
 lib/
 lib64/
 parts/
@@ -22,6 +23,7 @@ sdist/
 var/
 wheels/
 *.egg-info/
+build.bat
 .installed.cfg
 *.egg
 
