@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # BNTX Extractor
-# Version v0.1
+# Version v0.2
 # Copyright © 2017 Stella/AboodXD
 
 # This file is part of BNTX Extractor.
@@ -181,6 +181,8 @@ def readBNTX(f):
             compSel.append(value)
 
         types = {1: "texture", 3: "Cubemap", 8: "CubemapFar"}
+        if info.type_ not in types:
+            types[info.type_] = "Unknown"
 
         print("Number of Mipmaps: " + str(info.numMips - 1))
         if info.format_ in formats:
@@ -225,7 +227,7 @@ def readBNTX(f):
 
 def saveTextures(textures):
     for tex in textures:
-        if tex.format in formats:
+        if tex.format in formats and tex.numFaces < 2:
             if (tex.format >> 8) == 0xb:
                 format_ = 28
             elif tex.format == 0x701:
@@ -268,11 +270,14 @@ def saveTextures(textures):
         else:
             print("")
             print("Can't convert: " + tex.name)
-            print("Format is not supported.")
+            if tex.format not in formats:
+                print("Format is not supported.")
+            else:
+                print("Unsupported number of faces.")
 
 
 def main():
-    print("BNTX Extractor v0.1")
+    print("BNTX Extractor v0.2")
     print("(C) 2017 Stella/AboodXD")
 
     input_ = sys.argv[1]
