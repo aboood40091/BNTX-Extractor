@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # BNTX Extractor
-# Version v0.3
+# Version 0.4
 # Copyright © 2017 Stella/AboodXD
 
 # This file is part of BNTX Extractor.
@@ -46,11 +46,55 @@ formats = {0x0b01: 'R8_G8_B8_A8_UNORM',
            0x1f01: 'BC6H_UF16',
            0x1f02: 'BC6H_SF16',
            0x2001: 'BC7_UNORM',
-           0x2006: 'BC7_SRGB'
+           0x2006: 'BC7_SRGB',
+           0x2d01: 'ASTC4x4',
+           0x2d06: 'ASTC4x4 SRGB',
+           0x2e01: 'ASTC5x4',
+           0x2e06: 'ASTC5x4 SRGB',
+           0x2f01: 'ASTC5x5',
+           0x2f06: 'ASTC5x5 SRGB',
+           0x3001: 'ASTC6x5',
+           0x3006: 'ASTC6x5 SRGB',
+           0x3101: 'ASTC6x6',
+           0x3106: 'ASTC6x6 SRGB',
+           0x3201: 'ASTC8x5',
+           0x3206: 'ASTC8x5 SRGB',
+           0x3301: 'ASTC8x6',
+           0x3306: 'ASTC8x6 SRGB',
+           0x3401: 'ASTC8x8',
+           0x3406: 'ASTC8x8 SRGB',
+           0x3501: 'ASTC10x5',
+           0x3506: 'ASTC10x5 SRGB',
+           0x3601: 'ASTC10x6',
+           0x3606: 'ASTC10x6 SRGB',
+           0x3701: 'ASTC10x8',
+           0x3706: 'ASTC10x8 SRGB',
+           0x3801: 'ASTC10x10',
+           0x3806: 'ASTC10x10 SRGB',
+           0x3901: 'ASTC12x10',
+           0x3906: 'ASTC12x10 SRGB',
+           0x3a01: 'ASTC12x12',
+           0x3a06: 'ASTC12x12 SRGB'
            }
 
 BCn_formats = [0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20]
-bpps = {0xb: 4, 7: 2, 2: 1, 9: 2, 0x1a: 8, 0x1b: 16, 0x1c: 16, 0x1d: 8, 0x1e: 16, 0x1f: 16, 0x20: 16}
+
+ASTC_formats = [0x2d, 0x2e, 0x2f, 0x30,
+                0x31, 0x32, 0x33, 0x34,
+                0x35, 0x36, 0x37, 0x38,
+                0x39, 0x3a]
+
+blk_dims = {0x2d: (4, 4), 0x2e: (5, 4), 0x2f: (5, 5), 0x30: (6, 5),
+            0x31: (6, 6), 0x32: (8, 5), 0x33: (8, 6), 0x34: (8, 8),
+            0x35: (10, 5), 0x36: (10, 6), 0x37: (10, 8), 0x38: (10, 10),
+            0x39: (12, 10), 0x3a: (12, 12)}
+
+bpps = {0xb: 4, 7: 2, 2: 1, 9: 2, 0x1a: 8,
+        0x1b: 16, 0x1c: 16, 0x1d: 8, 0x1e: 16,
+        0x1f: 16, 0x20: 16, 0x2d: 16, 0x2e: 16,
+        0x2f: 16, 0x30: 16, 0x31: 16, 0x32: 16,
+        0x33: 16, 0x34: 16, 0x35: 16, 0x36: 16,
+        0x37: 16, 0x38: 16, 0x39: 16, 0x3a: 16}
 
 
 def bytes_to_string(byte):
@@ -177,14 +221,13 @@ def readBNTX(f):
         print("Image " + str(i+1) + " name: " + name)
 
         compSel = []
-        compSels = {5: "Red", 4: "Green", 3: "Blue", 2: "Alpha"}
+        compSels = {0: "0", 1: "1", 2: "Red", 3: "Green", 4: "Blue", 5: "Alpha"}
         for i in range(4):
             value = (info.compSel >> (8 * (3-i))) & 0xff
-            if value not in compSels:
-                compSels[value] = "Unknown"
+            if value == 0: value = len(compSel) + 2
             compSel.append(value)
 
-        types = {1: "texture", 3: "Cubemap", 8: "CubemapFar"}
+        types = {0: "1D", 1: "2D", 2: "3D", 3: "Cubemap", 8: "CubemapFar"}
         if info.type_ not in types:
             types[info.type_] = "Unknown"
 
@@ -201,13 +244,13 @@ def readBNTX(f):
         print("Alignment?: " + str(info.blkSize))
         if info.numChannels:
             if info.numChannels >= 1:
-                print("Channel 1: " + compSels[compSel[0]])
+                print("Channel 1: " + compSels[compSel[3]])
             if info.numChannels >= 2:
-                print("Channel 2: " + compSels[compSel[1]])
+                print("Channel 2: " + compSels[compSel[2]])
             if info.numChannels >= 3:
-                print("Channel 3: " + compSels[compSel[2]])
+                print("Channel 3: " + compSels[compSel[1]])
             if info.numChannels >= 4:
-                print("Channel 4: " + compSels[compSel[3]])
+                print("Channel 4: " + compSels[compSel[0]])
         print("Image type: " + types[info.type_])
         dataAddr = struct.unpack(bom + 'q', f[info.ptrAddr:info.ptrAddr+8])[0]
 
@@ -267,6 +310,9 @@ def saveTextures(textures):
 
             if (tex.format >> 8) in BCn_formats:
                 size = ((tex.width + 3) >> 2) * ((tex.height + 3) >> 2) * bpps[tex.format >> 8]
+            elif (tex.format >> 8) in ASTC_formats:
+                blkWidth, blkHeight = blk_dims[tex.format >> 8]
+                size = ((tex.width + blkWidth - 1) // blkWidth) * ((tex.height + blkHeight - 1) // blkHeight) * bpps[tex.format >> 8]
             else:
                 size = tex.width * tex.height * bpps[tex.format >> 8]
 
@@ -274,11 +320,23 @@ def saveTextures(textures):
 
             result = result[:size]
 
-            hdr = dds.generateHeader(1, tex.width, tex.height, format_, size, (tex.format >> 8) in BCn_formats)
+            if (tex.format >> 8) in ASTC_formats:
+                with open(tex.name + ".astc", "wb+") as output:
+                    output.write(b'\x13\xAB\xA1\x5C')
+                    output.write(blkWidth.to_bytes(1, "little"))
+                    output.write(blkHeight.to_bytes(1, "little"))
+                    output.write(b'\x01')
+                    output.write(tex.width.to_bytes(3, "little"))
+                    output.write(tex.height.to_bytes(3, "little"))
+                    output.write(1 .to_bytes(3, "little"))
+                    output.write(result)
 
-            with open(tex.name + ".dds", "wb+") as output:
-                output.write(hdr)
-                output.write(result)
+            else:
+                hdr = dds.generateHeader(1, tex.width, tex.height, format_, list(reversed(tex.compSel)), size, (tex.format >> 8) in BCn_formats)
+
+                with open(tex.name + ".dds", "wb+") as output:
+                    output.write(hdr)
+                    output.write(result)
         else:
             print("")
             print("Can't convert: " + tex.name)
@@ -289,7 +347,7 @@ def saveTextures(textures):
 
 
 def main():
-    print("BNTX Extractor v0.3")
+    print("BNTX Extractor v0.4")
     print("(C) 2017 Stella/AboodXD")
 
     input_ = sys.argv[1]

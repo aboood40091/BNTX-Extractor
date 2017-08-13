@@ -5,72 +5,57 @@
 
 """dds.py: DDS Header generator."""
 
-def generateHeader(num_mipmaps, w, h, format_, size, compressed):
+def generateHeader(num_mipmaps, w, h, format_, compSel, size, compressed):
     hdr = bytearray(128)
 
-    if format_ == 28:  # RGBA8
-        fmtbpp = 4
-        has_alpha = 1
-        rmask = 0x000000ff
-        gmask = 0x0000ff00
-        bmask = 0x00ff0000
-        amask = 0xff000000
+    luminance = False
+    RGB = False
 
-    elif format_ == 24:  # RGB10A2
+    has_alpha = True
+
+    if format_ == 28:  # ABGR8
+        RGB = True
+        compSels = {2: 0x000000ff, 3: 0x0000ff00, 4: 0x00ff0000, 5: 0xff000000, 1: 0}
         fmtbpp = 4
-        has_alpha = 1
-        rmask = 0x000003ff
-        gmask = 0x000ffc00
-        bmask = 0x3ff00000
-        amask = 0xc0000000
+        
+
+    elif format_ == 24:  # A2RGB10
+        RGB = True
+        compSels = {2: 0x3ff00000, 3: 0x000ffc00, 4: 0x000003ff, 5: 0xc0000000, 1: 0}
+        fmtbpp = 4
 
     elif format_ == 85:  # RGB565
+        RGB = True
+        compSels = {2: 0x0000f800, 3: 0x000007e0, 4: 0x0000001f, 5: 0, 1: 0}
         fmtbpp = 2
-        has_alpha = 0
-        rmask = 0x0000f800
-        gmask = 0x000007e0
-        bmask = 0x0000001f
-        amask = 0x00000000
+        has_alpha = False
 
-    elif format_ == 86:  # RGB5A1
+    elif format_ == 86:  # A1RGB5
+        RGB = True
+        compSels = {2: 0x00007c00, 3: 0x000003e0, 4: 0x0000001f, 5: 0x00008000, 1: 0}
         fmtbpp = 2
-        has_alpha = 1
-        rmask = 0x00007c00
-        gmask = 0x000003e0
-        bmask = 0x0000001f
-        amask = 0x00008000
 
-    elif format_ == 115:  # RGBA4
+    elif format_ == 115:  # ARGB4
+        RGB = True
+        compSels = {2: 0x00000f00, 3: 0x000000f0, 4: 0x0000000f, 5: 0x0000f000, 1: 0}
         fmtbpp = 2
-        has_alpha = 1
-        rmask = 0x00000f00
-        gmask = 0x000000f0
-        bmask = 0x0000000f
-        amask = 0x0000f000
 
     elif format_ == 61:  # L8
+        luminance = True
+        compSels = {2: 0x000000ff, 3: 0, 4: 0, 5: 0, 1: 0}
         fmtbpp = 1
-        has_alpha = 0
-        rmask = 0x000000ff
-        gmask = 0x000000ff
-        bmask = 0x000000ff
-        amask = 0x00000000
+        if compSel[3] != 2:
+            has_alpha = False
 
-    elif format_ == 49:  # L8A8
+    elif format_ == 49:  # A8L8
+        luminance = True
+        compSels = {2: 0x000000ff, 3: 0x0000ff00, 4: 0, 5: 0, 1: 0}
         fmtbpp = 2
-        has_alpha = 1
-        rmask = 0x000000ff
-        gmask = 0x000000ff
-        bmask = 0x000000ff
-        amask = 0x0000ff00
 
-    elif format_ == 112:  # L4A4
+    elif format_ == 112:  # A4L4
+        luminance = True
+        compSels = {2: 0x0000000f, 3: 0x000000f0, 4: 0, 5: 0, 1: 0}
         fmtbpp = 1
-        has_alpha = 1
-        rmask = 0x0000000f
-        gmask = 0x0000000f
-        bmask = 0x0000000f
-        amask = 0x000000f0
 
     flags = 0x00000001 | 0x00001000 | 0x00000004 | 0x00000002
 
@@ -85,16 +70,22 @@ def generateHeader(num_mipmaps, w, h, format_, size, compressed):
     if not compressed:
         flags |= 0x00000008
 
-        if (fmtbpp == 1 and not has_alpha) or format_ == 49:  # LUMINANCE
-            pflags = 0x00020000
+        a = False
 
-        elif fmtbpp == 1 and has_alpha:
+        if compSel[0] != 2 and compSel[1] != 2 and compSel[2] != 2 and compSel[3] == 2: # ALPHA
+            a = True
             pflags = 0x00000002
 
-        else:  # RGB
+        elif luminance:  # LUMINANCE
+            pflags = 0x00020000
+
+        elif RGB:  # RGB
             pflags = 0x00000040
 
-        if has_alpha and fmtbpp != 1:
+        else: # Not possible...
+            return b''
+
+        if has_alpha and not a:
             pflags |= 0x00000001
 
         size = w * fmtbpp
@@ -137,10 +128,10 @@ def generateHeader(num_mipmaps, w, h, format_, size, compressed):
     else:
         hdr[88:88 + 4] = (fmtbpp << 3).to_bytes(4, 'little')
 
-        hdr[92:92 + 4] = rmask.to_bytes(4, 'little')
-        hdr[96:96 + 4] = gmask.to_bytes(4, 'little')
-        hdr[100:100 + 4] = bmask.to_bytes(4, 'little')
-        hdr[104:104 + 4] = amask.to_bytes(4, 'little')
+        hdr[92:92 + 4] = compSels[compSel[0]].to_bytes(4, 'little')
+        hdr[96:96 + 4] = compSels[compSel[1]].to_bytes(4, 'little')
+        hdr[100:100 + 4] = compSels[compSel[2]].to_bytes(4, 'little')
+        hdr[104:104 + 4] = compSels[compSel[3]].to_bytes(4, 'little')
 
     hdr[108:108 + 4] = caps.to_bytes(4, 'little')
 
