@@ -1,4 +1,4 @@
-# BNTX Extractor v0.3
+# BNTX Extractor v0.4
 Extracts textures from the Binary Texture ('BNTX' / .bntx file extension) format used in Wii U games, and saves them as DDS.  
 
 ## Requirements:
@@ -25,6 +25,34 @@ Extracts textures from the Binary Texture ('BNTX' / .bntx file extension) format
 * BC6H_SF16
 * BC7_UNORM
 * BC7_SRGB
+* ASTC4x4
+* ASTC4x4 SRGB
+* ASTC5x4
+* ASTC5x4 SRGB
+* ASTC5x5
+* ASTC5x5 SRGB
+* ASTC6x5
+* ASTC6x5 SRGB
+* ASTC6x6
+* ASTC6x6 SRGB
+* ASTC8x5
+* ASTC8x5 SRGB
+* ASTC8x6
+* ASTC8x6 SRGB
+* ASTC8x8
+* ASTC8x8 SRGB
+* ASTC10x5
+* ASTC10x5 SRGB
+* ASTC10x6
+* ASTC10x6 SRGB
+* ASTC10x8
+* ASTC10x8 SRGB
+* ASTC10x10
+* ASTC10x10 SRGB
+* ASTC12x10
+* ASTC12x10 SRGB
+* ASTC12x12
+* ASTC12x12 SRGB
 
 ## Credits:
 * Stella/AboodXD - Making this extractor.
