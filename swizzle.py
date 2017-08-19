@@ -97,11 +97,56 @@ def deswizzle(width, height, format_, data):
         for x in range(origin_width):
             pos = getAddr(x, y, xb, yb, width, xBase) * bpp
 
-            result[pos_:pos_ + bpp] = data[pos:pos + bpp]
+            if pos_ + bpp <= len(data) and pos + bpp <= len(data):
+                result[pos_:pos_ + bpp] = data[pos:pos + bpp]
 
             pos_ += bpp
 
     return result
+
+
+def swizzle(width, height, format_, data):
+    pos_ = 0
+
+    bpp = bpps[format_ >> 8]
+
+    origin_width = width
+    origin_height = height
+
+    if (format_ >> 8) in BCn_formats:
+        origin_width = (origin_width + 3) // 4
+        origin_height = (origin_height + 3) // 4
+
+    elif (format_ >> 8) in ASTC_formats:
+        blkWidth, blkHeight = blk_dims[format_ >> 8]
+        origin_width = (origin_width + blkWidth  - 1) // blkWidth
+        origin_height = (origin_height + blkHeight - 1) // blkHeight
+
+    xb = countZeros(pow2RoundUp(origin_width))
+    yb = countZeros(pow2RoundUp(origin_height))
+
+    hh = pow2RoundUp(origin_height) >> 1;
+
+    if not isPow2(origin_height) and origin_height <= hh + hh // 3 and yb > 3:
+        yb -= 1
+
+    width = roundSize(origin_width, padds[bpp])
+
+    result = bytearray(data)
+
+    xBase = xBases[bpp]
+
+    for y in range(origin_height):
+        for x in range(origin_width):
+            pos = getAddr(x, y, xb, yb, width, xBase) * bpp
+
+            if pos + bpp <= len(data) and pos_ + bpp <= len(data):
+                result[pos:pos + bpp] = data[pos_:pos_ + bpp]
+
+            pos_ += bpp
+
+    return result
+
 
 def getAddr(x, y, xb, yb, width, xBase):
     xCnt    = xBase
@@ -123,8 +168,8 @@ def getAddr(x, y, xb, yb, width, xBase):
         xUsed += xCnt
         yUsed += yCnt
 
-        xCnt = min(xb - xUsed, 1)
-        yCnt = min(yb - yUsed, yCnt << 1)
+        xCnt = max(min(xb - xUsed, 1), 0)
+        yCnt = max(min(yb - yUsed, yCnt << 1), 0)
 
     address |= (x + y * (width >> xUsed)) << (xUsed + yUsed)
 
