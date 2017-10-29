@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # BNTX Extractor
-# Version 0.4
+# Version 0.5
 # Copyright © 2017 Stella/AboodXD
 
 # This file is part of BNTX Extractor.
@@ -242,15 +242,10 @@ def readBNTX(f):
         print("Number of channels: " + str(info.numChannels))
         print("Image Size: " + str(info.imageSize))
         print("Alignment?: " + str(info.blkSize))
-        if info.numChannels:
-            if info.numChannels >= 1:
-                print("Channel 1: " + compSels[compSel[3]])
-            if info.numChannels >= 2:
-                print("Channel 2: " + compSels[compSel[2]])
-            if info.numChannels >= 3:
-                print("Channel 3: " + compSels[compSel[1]])
-            if info.numChannels >= 4:
-                print("Channel 4: " + compSels[compSel[0]])
+        print("Channel 1: " + compSels[compSel[3]])
+        print("Channel 2: " + compSels[compSel[2]])
+        print("Channel 3: " + compSels[compSel[1]])
+        print("Channel 4: " + compSels[compSel[0]])
         print("Image type: " + types[info.type_])
         dataAddr = struct.unpack(bom + 'q', f[info.ptrAddr:info.ptrAddr+8])[0]
 
@@ -347,7 +342,7 @@ def saveTextures(textures):
 
 
 def main():
-    print("BNTX Extractor v0.4")
+    print("BNTX Extractor v0.5")
     print("(C) 2017 Stella/AboodXD")
 
     input_ = sys.argv[1]
