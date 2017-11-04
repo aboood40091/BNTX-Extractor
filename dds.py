@@ -5,7 +5,7 @@
 
 """dds.py: DDS Header generator."""
 
-dx10_formats = ["BC4U", "BC4S", "BC5U", "BC5S", "BC6H_UF16", "BC6H_SF16", "BC7", "BC7_SRGB"]
+dx10_formats = ["BC4U", "BC4S", "BC5U", "BC5S", "BC6H_UF16", "BC6H_SF16", "BC7"]
 
 def generateHeader(num_mipmaps, w, h, format_, compSel, size, compressed):
     hdr = bytearray(128)
@@ -143,7 +143,5 @@ def generateHeader(num_mipmaps, w, h, format_, compSel, size, compressed):
         hdr += bytearray(b"\x60\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00")
     elif format_ == "BC7":
         hdr += bytearray(b"\x62\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00")
-    elif format_ == "BC7_SRGB":
-        hdr += bytearray(b"\x63\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00")
 
     return hdr

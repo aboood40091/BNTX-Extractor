@@ -296,10 +296,8 @@ def saveTextures(textures):
                 format_ = "BC6H_UF16"
             elif tex.format == 0x1f02:
                 format_ = "BC6H_SF16"
-            elif tex.format == 0x2001:
+            elif (tex.format >> 8) == 0x20:
                 format_ = "BC7"
-            elif tex.format == 0x2006:
-                format_ = "BC7_SRGB"
 
             result = swizzle.deswizzle(tex.width, tex.height, tex.format, tex.data)
 
