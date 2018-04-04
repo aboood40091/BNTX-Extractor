@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 # BNTX Extractor
-# Version 0.5
-# Copyright © 2017 Stella/AboodXD
+# Version 0.6
+# Copyright © 2017-2018 AboodXD
 
 # This file is part of BNTX Extractor.
 
@@ -25,7 +25,7 @@
 import os, shutil, sys
 from cx_Freeze import setup, Executable
 
-version = '0.5'
+version = '0.6'
 
 # Pick a build directory
 dir_ = 'bntx_extract v' + version
@@ -44,7 +44,7 @@ setup(
     name = 'BNTX Extractor',
     version = version,
     description = 'Switch BNTX Extractor',
-    author = "Stella/AboodXD",
+    author = "AboodXD",
     options={
         'build_exe': {
             'build_exe': dir_,

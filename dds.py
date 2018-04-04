@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Copyright © 2016-2017 Stella/AboodXD
+# Copyright © 2016-2017 AboodXD
 
 """dds.py: DDS Header generator."""
 

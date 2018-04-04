@@ -1,5 +1,5 @@
-# BNTX Extractor v0.5
-Extracts textures from the Binary NX Texture ('BNTX' / .bntx file extension) format used in Wii U games, and saves them as DDS.  
+# BNTX Extractor v0.6
+Extracts textures from the Binary NX Texture ('BNTX' / .bntx file extension) format used in Switch games, and saves them as DDS.  
 
 ## Requirements:
 * Python 3.4 or higher.
@@ -55,7 +55,4 @@ Extracts textures from the Binary NX Texture ('BNTX' / .bntx file extension) for
 * ASTC12x12 SRGB
 
 ## Credits:
-* Stella/AboodXD - Making this extractor.
-
-## Special thanks to:
-* gdkchan - Original swizzling algorithm.
+* AboodXD - Making this extractor.

@@ -1,176 +1,91 @@
-# Original algorithm by gdkchan
-# Ported and improved (a tiny bit) by Stella/AboodXD
-
-BCn_formats = [0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20]
-
-ASTC_formats = [0x2d, 0x2e, 0x2f, 0x30,
-                0x31, 0x32, 0x33, 0x34,
-                0x35, 0x36, 0x37, 0x38,
-                0x39, 0x3a]
-
-blk_dims = {0x2d: (4, 4), 0x2e: (5, 4), 0x2f: (5, 5), 0x30: (6, 5),
-            0x31: (6, 6), 0x32: (8, 5), 0x33: (8, 6), 0x34: (8, 8),
-            0x35: (10, 5), 0x36: (10, 6), 0x37: (10, 8), 0x38: (10, 10),
-            0x39: (12, 10), 0x3a: (12, 12)}
-
-bpps = {0xb: 4, 7: 2, 2: 1, 9: 2, 0x1a: 8,
-        0x1b: 16, 0x1c: 16, 0x1d: 8, 0x1e: 16,
-        0x1f: 16, 0x20: 16, 0x2d: 16, 0x2e: 16,
-        0x2f: 16, 0x30: 16, 0x31: 16, 0x32: 16,
-        0x33: 16, 0x34: 16, 0x35: 16, 0x36: 16,
-        0x37: 16, 0x38: 16, 0x39: 16, 0x3a: 16}
-
-xBases = {1: 4, 2: 3, 4: 2, 8: 1, 16: 0}
-
-padds = {1: 64, 2: 32, 4: 16, 8: 8, 16: 4}
+from math import ceil
 
 
-def roundSize(size, pad):
-    mask = pad - 1
-    if size & mask:
-        size &= ~mask
-        size +=  pad
+BCn_formats = [
+    0x1a, 0x1b, 0x1c, 0x1d,
+    0x1e, 0x1f, 0x20,
+]
 
-    return size
+ASTC_formats = [
+    0x2d, 0x2e, 0x2f, 0x30,
+    0x31, 0x32, 0x33, 0x34,
+    0x35, 0x36, 0x37, 0x38,
+    0x39, 0x3a,
+]
 
+blk_dims = {  # format -> (blkWidth, blkHeight)
+    0x2d: (4, 4), 0x2e: (5, 4),
+    0x2f: (5, 5), 0x30: (6, 5),
+    0x31: (6, 6), 0x32: (8, 5),
+    0x33: (8, 6), 0x34: (8, 8),
+    0x35: (10, 5), 0x36: (10, 6),
+    0x37: (10, 8), 0x38: (10, 10),
+    0x39: (12, 10), 0x3a: (12, 12),
+}
 
-def pow2RoundUp(v):
-    v -= 1
-
-    v |= (v+1) >> 1
-    v |= v >>  2
-    v |= v >>  4
-    v |= v >>  8
-    v |= v >> 16
-
-    return v + 1
-
-
-def isPow2(v):
-    return v and not v & (v - 1)
-
-
-def countZeros(v):
-    numZeros = 0
-
-    for i in range(32):
-        if v & (1 << i):
-            break
-
-        numZeros += 1
-
-    return numZeros
+bpps = {  # format -> bytes_per_pixel
+    0x0b: 0x04, 0x07: 0x02, 0x02: 0x01, 0x09: 0x02, 0x1a: 0x08,
+    0x1b: 0x10, 0x1c: 0x10, 0x1d: 0x08, 0x1e: 0x10, 0x1f: 0x10,
+    0x20: 0x10, 0x2d: 0x10, 0x2e: 0x10, 0x2f: 0x10, 0x30: 0x10,
+    0x31: 0x10, 0x32: 0x10, 0x33: 0x10, 0x34: 0x10, 0x35: 0x10,
+    0x36: 0x10, 0x37: 0x10, 0x38: 0x10, 0x39: 0x10, 0x3a: 0x10,
+}
 
 
-def deswizzle(width, height, format_, data):
-    pos_ = 0
-
-    bpp = bpps[format_ >> 8]
-
-    origin_width = width
-    origin_height = height
-
+def _swizzle(width, height, format_, size_range, data, dataSize, toSwizzle):
     if (format_ >> 8) in BCn_formats:
-        origin_width = (origin_width + 3) // 4
-        origin_height = (origin_height + 3) // 4
+        width = (width + 3) // 4
+        height = (height + 3) // 4
 
     elif (format_ >> 8) in ASTC_formats:
         blkWidth, blkHeight = blk_dims[format_ >> 8]
-        origin_width = (origin_width + blkWidth  - 1) // blkWidth
-        origin_height = (origin_height + blkHeight - 1) // blkHeight
+        width = (width + blkWidth  - 1) // blkWidth
+        height = (height + blkHeight - 1) // blkHeight
 
-    xb = countZeros(pow2RoundUp(origin_width))
-    yb = countZeros(pow2RoundUp(origin_height))
+    assert 0 <= size_range <= 5
 
-    hh = pow2RoundUp(origin_height) >> 1;
+    block_height = 1 << size_range
 
-    if not isPow2(origin_height) and origin_height <= hh + hh // 3 and yb > 3:
-        yb -= 1
+    bpp = bpps[format_ >> 8]
+    result = bytearray(dataSize)
 
-    width = roundSize(origin_width, padds[bpp])
+    for y in range(height):
+        for x in range(width):
+            pos = getAddrBlockLinear(x, y, width, bpp, 0, block_height)
+            pos_ = (y * width + x) * bpp
 
-    result = bytearray(data)
+            if pos_ + bpp <= dataSize and pos + bpp <= dataSize:
+                if toSwizzle:
+                    result[pos:pos + bpp] = data[pos_:pos_ + bpp]
 
-    xBase = xBases[bpp]
-
-    for y in range(origin_height):
-        for x in range(origin_width):
-            pos = getAddr(x, y, xb, yb, width, xBase) * bpp
-
-            if pos_ + bpp <= len(data) and pos + bpp <= len(data):
-                result[pos_:pos_ + bpp] = data[pos:pos + bpp]
-
-            pos_ += bpp
+                else:
+                    result[pos_:pos_ + bpp] = data[pos:pos + bpp]
 
     return result
 
 
-def swizzle(width, height, format_, data):
-    pos_ = 0
-
-    bpp = bpps[format_ >> 8]
-
-    origin_width = width
-    origin_height = height
-
-    if (format_ >> 8) in BCn_formats:
-        origin_width = (origin_width + 3) // 4
-        origin_height = (origin_height + 3) // 4
-
-    elif (format_ >> 8) in ASTC_formats:
-        blkWidth, blkHeight = blk_dims[format_ >> 8]
-        origin_width = (origin_width + blkWidth  - 1) // blkWidth
-        origin_height = (origin_height + blkHeight - 1) // blkHeight
-
-    xb = countZeros(pow2RoundUp(origin_width))
-    yb = countZeros(pow2RoundUp(origin_height))
-
-    hh = pow2RoundUp(origin_height) >> 1;
-
-    if not isPow2(origin_height) and origin_height <= hh + hh // 3 and yb > 3:
-        yb -= 1
-
-    width = roundSize(origin_width, padds[bpp])
-
-    result = bytearray(data)
-
-    xBase = xBases[bpp]
-
-    for y in range(origin_height):
-        for x in range(origin_width):
-            pos = getAddr(x, y, xb, yb, width, xBase) * bpp
-
-            if pos + bpp <= len(data) and pos_ + bpp <= len(data):
-                result[pos:pos + bpp] = data[pos_:pos_ + bpp]
-
-            pos_ += bpp
-
-    return result
+def deswizzle(width, height, format_, size_range, data):
+    return _swizzle(width, height, format_, size_range, data, len(data), 0)
 
 
-def getAddr(x, y, xb, yb, width, xBase):
-    xCnt    = xBase
-    yCnt    = 1
-    xUsed   = 0
-    yUsed   = 0
-    address = 0
+def swizzle(width, height, format_, size_range, data):
+    return _swizzle(width, height, format_, size_range, data, len(data), 1)
 
-    while (xUsed < xBase + 2) and (xUsed + xCnt < xb):
-        xMask = (1 << xCnt) - 1
-        yMask = (1 << yCnt) - 1
 
-        address |= (x & xMask) << xUsed + yUsed
-        address |= (y & yMask) << xUsed + yUsed + xCnt
+def getAddrBlockLinear(x, y, image_width, bytes_per_pixel, base_address, block_height):
+    """
+    From the Tegra X1 TRM
+    """
+    image_width_in_gobs = ceil(image_width * bytes_per_pixel / 64)
 
-        x >>= xCnt
-        y >>= yCnt
+    GOB_address = (base_address
+                   + (y // (8 * block_height)) * 512 * block_height * image_width_in_gobs
+                   + (x * bytes_per_pixel // 64) * 512 * block_height
+                   + (y % (8 * block_height) // 8) * 512)
 
-        xUsed += xCnt
-        yUsed += yCnt
+    x *= bytes_per_pixel
 
-        xCnt = max(min(xb - xUsed, 1), 0)
-        yCnt = max(min(yb - yUsed, yCnt << 1), 0)
+    Address = (GOB_address + ((x % 64) // 32) * 256 + ((y % 8) // 2) * 64
+               + ((x % 32) // 16) * 32 + (y % 2) * 16 + (x % 16))
 
-    address |= (x + y * (width >> xUsed)) << (xUsed + yUsed)
-
-    return address
+    return Address
