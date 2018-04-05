@@ -81,7 +81,6 @@ formats = {
 BCn_formats = swizzle.BCn_formats
 ASTC_formats = swizzle.ASTC_formats
 blk_dims = swizzle.blk_dims
-bpps = swizzle.bpps
 
 
 def bytes_to_string(data, end=0):
@@ -322,6 +321,8 @@ def saveTextures(textures):
             size = len(result)
 
             if (tex.format >> 8) in ASTC_formats:
+                blkWidth, blkHeight = blk_dims[formatUpper]
+
                 outBuffer = b''.join([
                     b'\x13\xAB\xA1\x5C', blkWidth.to_bytes(1, "little"),
                     blkHeight.to_bytes(1, "little"), b'\1',
