@@ -14,7 +14,9 @@ ASTC_formats = [
 ]
 
 blk_dims = {  # format -> (blkWidth, blkHeight)
-    0x2d: (4, 4), 0x2e: (5, 4),
+    0x1a: (4, 4), 0x1b: (4, 4), 0x1c: (4, 4),
+    0x1d: (4, 4), 0x1e: (4, 4), 0x1f: (4, 4),
+    0x20: (4, 4), 0x2d: (4, 4), 0x2e: (5, 4),
     0x2f: (5, 5), 0x30: (6, 5),
     0x31: (6, 6), 0x32: (8, 5),
     0x33: (8, 6), 0x34: (8, 8),
@@ -40,20 +42,17 @@ def round_up(x, y):
     return ((x - 1) | (y - 1)) + 1
 
 
-def _deswizzle(width, height, format_, tileMode, alignment, size_range, data):
+def deswizzle(width, height, format_, tileMode, alignment, size_range, data):
     assert 0 <= size_range <= 5
-
     block_height = 1 << size_range
-    bpp = bpps[format_ >> 8]
 
-    if (format_ >> 8) in BCn_formats:
-        width = (width + 3) // 4
-        height = (height + 3) // 4
+    formatUpper = format_ >> 8
+    bpp = bpps[formatUpper]
 
-    elif (format_ >> 8) in ASTC_formats:
-        blkWidth, blkHeight = blk_dims[format_ >> 8]
-        width = (width + blkWidth  - 1) // blkWidth
-        height = (height + blkHeight - 1) // blkHeight
+    if (format_ >> 8) in blk_dims:
+        blkWidth, blkHeight = blk_dims[formatUpper]
+        width = DIV_ROUND_UP(width, blkWidth)
+        height = DIV_ROUND_UP(height, blkHeight)
 
     if tileMode == 0:
         min_pitch = DIV_ROUND_UP(width * bpp, 8)
