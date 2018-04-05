@@ -247,11 +247,17 @@ def readBNTX(f):
         print("Image type: " + types[info.type_])
 
         dataAddr = struct.unpack(bom + 'q', f[info.ptrsAddr:info.ptrsAddr + 8])[0]
+        mipOffsets = {0: 0}
+
+        for i in range(1, info.numMips):
+            mipOffset = struct.unpack(bom + 'q', f[info.ptrsAddr + (i * 8):info.ptrsAddr + (i * 8) + 8])[0]
+            mipOffsets[i] = mipOffset - dataAddr
 
         tex = TexInfo()
         tex.name = name
         tex.tileMode = info.tileMode
         tex.numMips = info.numMips
+        tex.mipOffsets = mipOffsets
         tex.width = info.width
         tex.height = info.height
         tex.format = info.format_
@@ -312,25 +318,8 @@ def saveTextures(textures):
             elif (tex.format >> 8) == 0x20:
                 format_ = "BC7"
 
-            if tex.tileMode == 0:
-                result = tex.data
-
-            else:
-                result = swizzle.deswizzle(tex.width, tex.height, tex.format, tex.sizeRange, tex.data)
-
-            if (tex.format >> 8) in BCn_formats:
-                size = ((tex.width + 3) >> 2) * ((tex.height + 3) >> 2) * bpps[tex.format >> 8]
-
-            elif (tex.format >> 8) in ASTC_formats:
-                blkWidth, blkHeight = blk_dims[tex.format >> 8]
-                size = ((tex.width + blkWidth - 1) // blkWidth) * ((tex.height + blkHeight - 1) // blkHeight) * bpps[tex.format >> 8]
-
-            else:
-                size = tex.width * tex.height * bpps[tex.format >> 8]
-
-            assert len(result) >= size
-
-            result = result[:size]
+            result = swizzle.deswizzle(tex.width, tex.height, tex.format, tex.tileMode, tex.alignment, tex.sizeRange, tex.data)
+            size = len(result)
 
             if (tex.format >> 8) in ASTC_formats:
                 outBuffer = b''.join([

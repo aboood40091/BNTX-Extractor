@@ -32,7 +32,20 @@ bpps = {  # format -> bytes_per_pixel
 }
 
 
-def _swizzle(width, height, format_, size_range, data, dataSize, toSwizzle):
+def DIV_ROUND_UP(n, d):
+    return (n + d - 1) // d
+
+
+def round_up(x, y):
+    return ((x - 1) | (y - 1)) + 1
+
+
+def _deswizzle(width, height, format_, tileMode, alignment, size_range, data):
+    assert 0 <= size_range <= 5
+
+    block_height = 1 << size_range
+    bpp = bpps[format_ >> 8]
+
     if (format_ >> 8) in BCn_formats:
         width = (width + 3) // 4
         height = (height + 3) // 4
@@ -42,34 +55,30 @@ def _swizzle(width, height, format_, size_range, data, dataSize, toSwizzle):
         width = (width + blkWidth  - 1) // blkWidth
         height = (height + blkHeight - 1) // blkHeight
 
-    assert 0 <= size_range <= 5
+    if tileMode == 0:
+        min_pitch = DIV_ROUND_UP(width * bpp, 8)
+        pitch = round_up(min_pitch, alignment * 64)
 
-    block_height = 1 << size_range
+    else:
+        pitch = width
 
-    bpp = bpps[format_ >> 8]
-    result = bytearray(dataSize)
+    dataSize = len(data)
+    result = bytearray(width * height * bpp)
 
     for y in range(height):
         for x in range(width):
-            pos = getAddrBlockLinear(x, y, width, bpp, 0, block_height)
+            if tileMode == 0:
+                pos = (y * pitch + x) * bpp
+
+            else:
+                pos = getAddrBlockLinear(x, y, width, bpp, 0, block_height)
+
             pos_ = (y * width + x) * bpp
 
-            if pos_ + bpp <= dataSize and pos + bpp <= dataSize:
-                if toSwizzle:
-                    result[pos:pos + bpp] = data[pos_:pos_ + bpp]
-
-                else:
-                    result[pos_:pos_ + bpp] = data[pos:pos + bpp]
+            if pos + bpp <= dataSize:
+                result[pos_:pos_ + bpp] = data[pos:pos + bpp]
 
     return result
-
-
-def deswizzle(width, height, format_, size_range, data):
-    return _swizzle(width, height, format_, size_range, data, len(data), 0)
-
-
-def swizzle(width, height, format_, size_range, data):
-    return _swizzle(width, height, format_, size_range, data, len(data), 1)
 
 
 def getAddrBlockLinear(x, y, image_width, bytes_per_pixel, base_address, block_height):
