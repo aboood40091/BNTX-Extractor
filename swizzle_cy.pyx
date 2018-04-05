@@ -9,39 +9,6 @@ ctypedef unsigned char u8
 ctypedef unsigned int u32
 
 
-BCn_formats = [
-    0x1a, 0x1b, 0x1c, 0x1d,
-    0x1e, 0x1f, 0x20,
-]
-
-ASTC_formats = [
-    0x2d, 0x2e, 0x2f, 0x30,
-    0x31, 0x32, 0x33, 0x34,
-    0x35, 0x36, 0x37, 0x38,
-    0x39, 0x3a,
-]
-
-blk_dims = {  # format -> (blkWidth, blkHeight)
-    0x1a: (4, 4), 0x1b: (4, 4), 0x1c: (4, 4),
-    0x1d: (4, 4), 0x1e: (4, 4), 0x1f: (4, 4),
-    0x20: (4, 4), 0x2d: (4, 4), 0x2e: (5, 4),
-    0x2f: (5, 5), 0x30: (6, 5),
-    0x31: (6, 6), 0x32: (8, 5),
-    0x33: (8, 6), 0x34: (8, 8),
-    0x35: (10, 5), 0x36: (10, 6),
-    0x37: (10, 8), 0x38: (10, 10),
-    0x39: (12, 10), 0x3a: (12, 12),
-}
-
-bpps = {  # format -> bytes_per_pixel
-    0x0b: 0x04, 0x07: 0x02, 0x02: 0x01, 0x09: 0x02, 0x1a: 0x08,
-    0x1b: 0x10, 0x1c: 0x10, 0x1d: 0x08, 0x1e: 0x10, 0x1f: 0x10,
-    0x20: 0x10, 0x2d: 0x10, 0x2e: 0x10, 0x2f: 0x10, 0x30: 0x10,
-    0x31: 0x10, 0x32: 0x10, 0x33: 0x10, 0x34: 0x10, 0x35: 0x10,
-    0x36: 0x10, 0x37: 0x10, 0x38: 0x10, 0x39: 0x10, 0x3a: 0x10,
-}
-
-
 cdef u32 DIV_ROUND_UP(u32 n, u32 d):
     return (n + d - 1) // d
 
@@ -50,24 +17,15 @@ cdef u32 round_up(u32 x, u32 y):
     return ((x - 1) | (y - 1)) + 1
 
 
-cpdef bytearray deswizzle(u32 width, u32 height, u32 format_, u32 tileMode, u32 alignment, int size_range, data_):
+cpdef bytearray deswizzle(u32 width, u32 height, u32 blkWidth, blkHeight, u32 bpp, u32 tileMode, u32 alignment, int size_range, data_):
     assert 0 <= size_range <= 5
+    cdef u32 block_height = 1 << size_range
 
-    cdef:
-        u32 block_height = 1 << size_range
-
-        u32 formatUpper = format_ >> 8
-        u32 bpp = bpps[formatUpper]
-
-        u32 blkWidth, blkHeight, min_pitch, pitch
-
-    if formatUpper in blk_dims:
-        blkWidth, blkHeight = blk_dims[formatUpper]
-        width = DIV_ROUND_UP(width, blkWidth)
-        height = DIV_ROUND_UP(height, blkHeight)
+    width = DIV_ROUND_UP(width, blkWidth)
+    height = DIV_ROUND_UP(height, blkHeight)
 
     if tileMode == 0:
-        min_pitch = DIV_ROUND_UP(width * bpp, 8)
+        min_pitch = DIV_ROUND_UP(width * bpp, bpp)
         pitch = round_up(min_pitch, alignment * 64)
 
     else:
@@ -80,7 +38,7 @@ cpdef bytearray deswizzle(u32 width, u32 height, u32 format_, u32 tileMode, u32 
         u8 *data = dataArr.data.as_uchars
         u8 *result = <u8 *>malloc(width * height * bpp)
 
-        u32 x, y, z, pos, pos_
+        u32 x, y, pos, pos_
 
     try:
         for y in range(height):
@@ -94,8 +52,7 @@ cpdef bytearray deswizzle(u32 width, u32 height, u32 format_, u32 tileMode, u32 
                 pos_ = (y * width + x) * bpp
 
                 if pos + bpp <= dataSize:
-                    for z in range(bpp):
-                        result[pos_ + z] = data[pos + z]
+                    memcpy(result + pos_, data + pos, bpp)
 
         return bytearray(<u8[:width * height * bpp]>result)
 

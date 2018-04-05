@@ -84,9 +84,37 @@ formats = {
     0x3a06: 'ASTC12x12 SRGB'
 }
 
-BCn_formats = swizzle.BCn_formats
-ASTC_formats = swizzle.ASTC_formats
-blk_dims = swizzle.blk_dims
+BCn_formats = [
+    0x1a, 0x1b, 0x1c, 0x1d,
+    0x1e, 0x1f, 0x20,
+]
+
+ASTC_formats = [
+    0x2d, 0x2e, 0x2f, 0x30,
+    0x31, 0x32, 0x33, 0x34,
+    0x35, 0x36, 0x37, 0x38,
+    0x39, 0x3a,
+]
+
+blk_dims = {  # format -> (blkWidth, blkHeight)
+    0x1a: (4, 4), 0x1b: (4, 4), 0x1c: (4, 4),
+    0x1d: (4, 4), 0x1e: (4, 4), 0x1f: (4, 4),
+    0x20: (4, 4), 0x2d: (4, 4), 0x2e: (5, 4),
+    0x2f: (5, 5), 0x30: (6, 5),
+    0x31: (6, 6), 0x32: (8, 5),
+    0x33: (8, 6), 0x34: (8, 8),
+    0x35: (10, 5), 0x36: (10, 6),
+    0x37: (10, 8), 0x38: (10, 10),
+    0x39: (12, 10), 0x3a: (12, 12),
+}
+
+bpps = {  # format -> bytes_per_pixel
+    0x0b: 0x04, 0x07: 0x02, 0x02: 0x01, 0x09: 0x02, 0x1a: 0x08,
+    0x1b: 0x10, 0x1c: 0x10, 0x1d: 0x08, 0x1e: 0x10, 0x1f: 0x10,
+    0x20: 0x10, 0x2d: 0x10, 0x2e: 0x10, 0x2f: 0x10, 0x30: 0x10,
+    0x31: 0x10, 0x32: 0x10, 0x33: 0x10, 0x34: 0x10, 0x35: 0x10,
+    0x36: 0x10, 0x37: 0x10, 0x38: 0x10, 0x39: 0x10, 0x3a: 0x10,
+}
 
 
 def bytes_to_string(data, end=0):
@@ -323,12 +351,18 @@ def saveTextures(textures):
             elif (tex.format >> 8) == 0x20:
                 format_ = "BC7"
 
-            result = swizzle.deswizzle(tex.width, tex.height, tex.format, tex.tileMode, tex.alignment, tex.sizeRange, tex.data)
+            if (tex.format >> 8) in blk_dims:
+                blkWidth, blkHeight = blk_dims[tex.format >> 8]
+
+            else:
+                blkWidth, blkHeight = 1, 1
+
+            bpp = bpps[tex.format >> 8]
+
+            result = swizzle.deswizzle(tex.width, tex.height, blkWidth, blkHeight, bpp, tex.tileMode, tex.alignment, tex.sizeRange, tex.data)
             size = len(result)
 
             if (tex.format >> 8) in ASTC_formats:
-                blkWidth, blkHeight = blk_dims[tex.format >> 8]
-
                 outBuffer = b''.join([
                     b'\x13\xAB\xA1\x5C', blkWidth.to_bytes(1, "little"),
                     blkHeight.to_bytes(1, "little"), b'\1',
