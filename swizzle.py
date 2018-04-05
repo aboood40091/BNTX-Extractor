@@ -49,7 +49,7 @@ def deswizzle(width, height, format_, tileMode, alignment, size_range, data):
     formatUpper = format_ >> 8
     bpp = bpps[formatUpper]
 
-    if (format_ >> 8) in blk_dims:
+    if formatUpper in blk_dims:
         blkWidth, blkHeight = blk_dims[formatUpper]
         width = DIV_ROUND_UP(width, blkWidth)
         height = DIV_ROUND_UP(height, blkHeight)
