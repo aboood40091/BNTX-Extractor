@@ -25,7 +25,13 @@
 import struct, sys
 
 import dds
-import swizzle
+
+try:
+    import pyximport; pyximport.install()
+    import swizzle_cy as swizzle
+
+except:
+    import swizzle
 
 
 formats = {
