@@ -321,7 +321,7 @@ def saveTextures(textures):
             size = len(result)
 
             if (tex.format >> 8) in ASTC_formats:
-                blkWidth, blkHeight = blk_dims[formatUpper]
+                blkWidth, blkHeight = blk_dims[tex.format >> 8]
 
                 outBuffer = b''.join([
                     b'\x13\xAB\xA1\x5C', blkWidth.to_bytes(1, "little"),
