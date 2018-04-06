@@ -6,7 +6,7 @@ def round_up(x, y):
     return ((x - 1) | (y - 1)) + 1
 
 
-def deswizzle(width, height, blkWidth, blkHeight, bpp, tileMode, alignment, size_range, data):
+def _swizzle(width, height, blkWidth, blkHeight, bpp, tileMode, alignment, size_range, data, toSwizzle):
     assert 0 <= size_range <= 5
     block_height = 1 << size_range
 
@@ -14,29 +14,40 @@ def deswizzle(width, height, blkWidth, blkHeight, bpp, tileMode, alignment, size
     height = DIV_ROUND_UP(height, blkHeight)
 
     if tileMode == 0:
-        min_pitch = DIV_ROUND_UP(width * bpp, bpp)
-        pitch = round_up(min_pitch, alignment * 64)
+        pitch = round_up(width * bpp, alignment * 64)
 
     else:
-        pitch = round_up(width, 64)
+        pitch = round_up(width * bpp, 64)
 
-    dataSize = len(data)
-    result = bytearray(width * height * bpp)
+    surfSize = round_up(pitch * round_up(height, block_height * 8), alignment)
+    result = bytearray(surfSize)
 
     for y in range(height):
         for x in range(width):
             if tileMode == 0:
-                pos = (y * pitch + x) * bpp
+                pos = y * pitch + x * bpp
 
             else:
                 pos = getAddrBlockLinear(x, y, width, bpp, 0, block_height)
 
             pos_ = (y * width + x) * bpp
 
-            if pos + bpp <= dataSize:
-                result[pos_:pos_ + bpp] = data[pos:pos + bpp]
+            if pos + bpp <= surfSize:
+                if toSwizzle:
+                    result[pos:pos + bpp] = data[pos_:pos_ + bpp]
+
+                else:
+                    result[pos_:pos_ + bpp] = data[pos:pos + bpp]
 
     return result
+
+
+def deswizzle(width, height, blkWidth, blkHeight, bpp, tileMode, alignment, size_range, data):
+    return _swizzle(width, height, blkWidth, blkHeight, bpp, tileMode, alignment, size_range, bytes(data), 0)
+
+
+def swizzle(width, height, blkWidth, blkHeight, bpp, tileMode, alignment, size_range, data):
+    return _swizzle(width, height, blkWidth, blkHeight, bpp, tileMode, alignment, size_range, bytes(data), 1)
 
 
 def getAddrBlockLinear(x, y, image_width, bytes_per_pixel, base_address, block_height):

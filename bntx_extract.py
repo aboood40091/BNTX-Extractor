@@ -33,6 +33,8 @@ try:
 except:
     import swizzle
 
+DIV_ROUND_UP = swizzle.DIV_ROUND_UP
+
 
 formats = {
     0x0b01: 'R8_G8_B8_A8_UNORM',
@@ -359,8 +361,10 @@ def saveTextures(textures):
 
             bpp = bpps[tex.format >> 8]
 
+            size = DIV_ROUND_UP(tex.width, blkWidth) * DIV_ROUND_UP(tex.height, blkHeight) * bpp
+
             result = swizzle.deswizzle(tex.width, tex.height, blkWidth, blkHeight, bpp, tex.tileMode, tex.alignment, tex.sizeRange, tex.data)
-            size = len(result)
+            result = result[:size]
 
             if (tex.format >> 8) in ASTC_formats:
                 outBuffer = b''.join([

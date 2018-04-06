@@ -8,7 +8,7 @@ ctypedef unsigned char u8
 ctypedef unsigned int u32
 
 
-cdef u32 DIV_ROUND_UP(u32 n, u32 d):
+cpdef u32 DIV_ROUND_UP(u32 n, u32 d):
     return (n + d - 1) // d
 
 
@@ -16,28 +16,26 @@ cdef u32 round_up(u32 x, u32 y):
     return ((x - 1) | (y - 1)) + 1
 
 
-cpdef bytearray deswizzle(u32 width, u32 height, u32 blkWidth, blkHeight, u32 bpp, u32 tileMode, u32 alignment, int size_range, data_):
+cdef bytearray _swizzle(u32 width, u32 height, u32 blkWidth, blkHeight, u32 bpp, u32 tileMode, u32 alignment, int size_range, bytes data_, int toSwizzle):
     assert 0 <= size_range <= 5
     cdef u32 block_height = 1 << size_range
 
     width = DIV_ROUND_UP(width, blkWidth)
     height = DIV_ROUND_UP(height, blkHeight)
 
-    cdef u32 min_pitch, pitch
-
+    cdef u32 pitch
     if tileMode == 0:
-        min_pitch = DIV_ROUND_UP(width * bpp, bpp)
-        pitch = round_up(min_pitch, alignment * 64)
+        pitch = round_up(width * bpp, alignment * 64)
 
     else:
-        pitch = round_up(width, 64)
+        pitch = round_up(width * bpp, 64)
 
     cdef:
-        u32 dataSize = len(data_)
+        u32 surfSize = round_up(pitch * round_up(height, block_height * 8), alignment)
 
         array.array dataArr = array.array('B', data_)
         u8 *data = dataArr.data.as_uchars
-        u8 *result = <u8 *>malloc(width * height * bpp)
+        u8 *result = <u8 *>malloc(surfSize)
 
         u32 x, y, pos, pos_
 
@@ -45,20 +43,32 @@ cpdef bytearray deswizzle(u32 width, u32 height, u32 blkWidth, blkHeight, u32 bp
         for y in range(height):
             for x in range(width):
                 if tileMode == 0:
-                    pos = (y * pitch + x) * bpp
+                    pos = y * pitch + x * bpp
 
                 else:
                     pos = getAddrBlockLinear(x, y, width, bpp, 0, block_height)
 
                 pos_ = (y * width + x) * bpp
 
-                if pos + bpp <= dataSize:
-                    memcpy(result + pos_, data + pos, bpp)
+                if pos + bpp <= surfSize:
+                    if toSwizzle:
+                        memcpy(result + pos, data + pos_, bpp)
 
-        return bytearray(<u8[:width * height * bpp]>result)
+                    else:
+                        memcpy(result + pos_, data + pos, bpp)
+
+        return bytearray(<u8[:surfSize]>result)
 
     finally:
         free(result)
+
+
+cpdef deswizzle(u32 width, u32 height, u32 blkWidth, blkHeight, u32 bpp, u32 tileMode, u32 alignment, int size_range, data):
+    return _swizzle(width, height, blkWidth, blkHeight, bpp, tileMode, alignment, size_range, bytes(data), 0)
+
+
+cpdef swizzle(u32 width, u32 height, u32 blkWidth, blkHeight, u32 bpp, u32 tileMode, u32 alignment, int size_range, data):
+    return _swizzle(width, height, blkWidth, blkHeight, bpp, tileMode, alignment, size_range, bytes(data), 1)
 
 
 cdef u32 getAddrBlockLinear(u32 x, u32 y, u32 image_width, u32 bytes_per_pixel, u32 base_address, u32 block_height):
