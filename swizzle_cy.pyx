@@ -1,6 +1,5 @@
 from cpython cimport array
 from cython cimport view
-from libc.math cimport ceil
 from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy
 
@@ -24,12 +23,14 @@ cpdef bytearray deswizzle(u32 width, u32 height, u32 blkWidth, blkHeight, u32 bp
     width = DIV_ROUND_UP(width, blkWidth)
     height = DIV_ROUND_UP(height, blkHeight)
 
+    cdef u32 min_pitch, pitch
+
     if tileMode == 0:
         min_pitch = DIV_ROUND_UP(width * bpp, bpp)
         pitch = round_up(min_pitch, alignment * 64)
 
     else:
-        pitch = width
+        pitch = round_up(width, 64)
 
     cdef:
         u32 dataSize = len(data_)
@@ -65,7 +66,7 @@ cdef u32 getAddrBlockLinear(u32 x, u32 y, u32 image_width, u32 bytes_per_pixel, 
     From the Tegra X1 TRM
     """
     cdef:
-        u32 image_width_in_gobs = <u32>ceil(image_width * bytes_per_pixel / 64)
+        u32 image_width_in_gobs = DIV_ROUND_UP(image_width * bytes_per_pixel, 64)
 
         u32 GOB_address = (base_address
                            + (y // (8 * block_height)) * 512 * block_height * image_width_in_gobs

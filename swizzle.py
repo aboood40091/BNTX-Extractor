@@ -1,6 +1,3 @@
-from math import ceil
-
-
 def DIV_ROUND_UP(n, d):
     return (n + d - 1) // d
 
@@ -21,7 +18,7 @@ def deswizzle(width, height, blkWidth, blkHeight, bpp, tileMode, alignment, size
         pitch = round_up(min_pitch, alignment * 64)
 
     else:
-        pitch = width
+        pitch = round_up(width, 64)
 
     dataSize = len(data)
     result = bytearray(width * height * bpp)
@@ -46,7 +43,7 @@ def getAddrBlockLinear(x, y, image_width, bytes_per_pixel, base_address, block_h
     """
     From the Tegra X1 TRM
     """
-    image_width_in_gobs = ceil(image_width * bytes_per_pixel / 64)
+    image_width_in_gobs = DIV_ROUND_UP(image_width * bytes_per_pixel, 64)
 
     GOB_address = (base_address
                    + (y // (8 * block_height)) * 512 * block_height * image_width_in_gobs
