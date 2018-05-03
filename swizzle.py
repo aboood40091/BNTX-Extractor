@@ -14,12 +14,13 @@ def _swizzle(width, height, blkWidth, blkHeight, bpp, tileMode, alignment, size_
     height = DIV_ROUND_UP(height, blkHeight)
 
     if tileMode == 0:
-        pitch = round_up(width * bpp, alignment * 64)
+        pitch = round_up(width * bpp, 32)
+        surfSize = round_up(pitch * height, alignment)
 
     else:
         pitch = round_up(width * bpp, 64)
+        surfSize = round_up(pitch * round_up(height, block_height * 8), alignment)
 
-    surfSize = round_up(pitch * round_up(height, block_height * 8), alignment)
     result = bytearray(surfSize)
 
     for y in range(height):

@@ -16,23 +16,26 @@ cdef u32 round_up(u32 x, u32 y):
     return ((x - 1) | (y - 1)) + 1
 
 
-cdef bytearray _swizzle(u32 width, u32 height, u32 blkWidth, blkHeight, u32 bpp, u32 tileMode, u32 alignment, int size_range, bytes data_, int toSwizzle):
+cdef bytearray _swizzle(u32 width, u32 height, u32 blkWidth, u32 blkHeight, u32 bpp, u32 tileMode, u32 alignment, int size_range, bytes data_, int toSwizzle):
     assert 0 <= size_range <= 5
     cdef u32 block_height = 1 << size_range
 
     width = DIV_ROUND_UP(width, blkWidth)
     height = DIV_ROUND_UP(height, blkHeight)
 
-    cdef u32 pitch
+    cdef:
+        u32 pitch
+        u32 surfSize
+
     if tileMode == 0:
-        pitch = round_up(width * bpp, alignment * 64)
+        pitch = round_up(width * bpp, 32)
+        surfSize = round_up(pitch * height, alignment)
 
     else:
         pitch = round_up(width * bpp, 64)
+        surfSize = round_up(pitch * round_up(height, block_height * 8), alignment)
 
     cdef:
-        u32 surfSize = round_up(pitch * round_up(height, block_height * 8), alignment)
-
         array.array dataArr = array.array('B', data_)
         u8 *data = dataArr.data.as_uchars
         u8 *result = <u8 *>malloc(surfSize)
@@ -63,11 +66,11 @@ cdef bytearray _swizzle(u32 width, u32 height, u32 blkWidth, blkHeight, u32 bpp,
         free(result)
 
 
-cpdef deswizzle(u32 width, u32 height, u32 blkWidth, blkHeight, u32 bpp, u32 tileMode, u32 alignment, int size_range, data):
+cpdef deswizzle(u32 width, u32 height, u32 blkWidth, u32 blkHeight, u32 bpp, u32 tileMode, u32 alignment, int size_range, data):
     return _swizzle(width, height, blkWidth, blkHeight, bpp, tileMode, alignment, size_range, bytes(data), 0)
 
 
-cpdef swizzle(u32 width, u32 height, u32 blkWidth, blkHeight, u32 bpp, u32 tileMode, u32 alignment, int size_range, data):
+cpdef swizzle(u32 width, u32 height, u32 blkWidth, u32 blkHeight, u32 bpp, u32 tileMode, u32 alignment, int size_range, data):
     return _swizzle(width, height, blkWidth, blkHeight, bpp, tileMode, alignment, size_range, bytes(data), 1)
 
 
